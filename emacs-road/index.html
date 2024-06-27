@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>모든 길은 Emacs로 통한다</title>
+<meta name="author" content="Juhun Lee"/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4/dist/reveal.css"/>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4/dist/theme/dracula.css" id="theme"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4/plugin/highlight/zenburn.css"/>
+<style>
+.reveal { word-break: keep-all; }
+.reveal hgroup p { font-size: var(--r-heading3-size); }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide">
+<hgroup><h1>모든 길은 Emacs로 통한다</h1><p>Emacs로 나만의 워크플로우 구성하기</p></hgroup><p><a href="https://rangho.dev/talks/emacs-road/">https://rangho.dev/talks/emacs-road/</a>
+</section>
+
+
+<section>
+<section id="slide-orgba9af0d">
+<h2 id="orgba9af0d"><code>$ whoami</code></h2>
+<div style="display: flex;">
+<div style="flex: 2;">
+<ul>
+<li>자칭 힙스터</li>
+<li>타칭 홍대병</li>
+<li>리눅스 유저</li>
+<li>Emacs 유저</li>
+
+</ul>
+
+<p>
+<br />
+</p>
+
+<p>
+<br />
+</p>
+
+<p>
+<br />
+</p>
+
+<p class="fragment (appear)">
+오늘은 <b>Emacs</b>​에 대해 이야기해 봅시다.
+</p>
+</div>
+
+<div style="flex: 1; font-size: 0.75em; text-align: left;">
+
+<div id="org5487f7f" class="figure">
+<p><img src="https://github.com/RangHo.png" alt="RangHo.png" />
+</p>
+</div>
+
+<p>
+GitHub: <a href="https://github.com/RangHo"><code>@RangHo</code></a> <br />
+Instagram: <a href="https://instagram.com/rangho_lee"><code>@rangho_lee</code></a>
+</p>
+</div>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-org1a50c3a">
+<h2 id="org1a50c3a">에디터 설문조사</h2>
+
+</section>
+</section>
+<section>
+<section id="slide-org9eb2cba">
+<h2 id="org9eb2cba">고대부터 내려오는 그들의 싸움</h2>
+<ul>
+<li class="fragment appear">전통의 강호, <b>Vim</b>​과 <b>Emacs</b></li>
+<li class="fragment appear">엔터프라이즈의 친구, <b>Visual Studio</b>​와 <b>IntelliJ IDEA</b></li>
+<li class="fragment appear">스타벅스 입장권, <del>Atom</del>​과 <b>Visual Studio Code</b></li>
+<li class="fragment appear">홍대병 오버도즈, <b>JetBrains Fleet</b>​과 <b>Zed</b></li>
+
+</ul>
+
+</section>
+<section id="slide-orgf8b54cc">
+<h3 id="orgf8b54cc">하지만 실상은&#x2026;</h3>
+<iframe width="800" height="450" src="https://drive.google.com/file/d/1Sanuzfwmkhwv6kIBNX6V1yaNuD7OGIw8/preview"></iframe>
+
+</section>
+<section id="slide-orgd98f7a3">
+<h3 id="orgd98f7a3">그래서 앞에 나온 사람은 지금까지 뭘 썼을까</h3>
+<dl>
+<dt class="fragment appear">2010 ~ 2015</dt><dd class="fragment appear">Visual Studio 2010 Express, Notepad++, <del>QBASIC</del></dd>
+<dt class="fragment appear">2015 ~ 2016</dt><dd class="fragment appear">Eclipse, jEdit</dd>
+<dt class="fragment appear">2016 ~ 2017</dt><dd class="fragment appear">IntelliJ IDEA, Atom</dd>
+<dt class="fragment appear">2017 ~ 2019</dt><dd class="fragment appear">Rider, Visual Studio Code</dd>
+<dt class="fragment appear">2019 ~ 2021</dt><dd class="fragment appear">NeoVim (<a href="https://github.com/RangHo/dotfiles/commit/f7da34d092400200461e0772fca06606ccf51036"><code>RangHo/dotfiles@f7da34d</code></a>)</dd>
+<dt class="fragment appear"><del>2021 ~ 2023</del></dt><dd class="fragment appear"><del>PowerShell ISE</del></dd>
+<dt class="fragment appear">2021 ~ Present</dt><dd class="fragment appear">Emacs (<a href="https://github.com/RangHo/dotfiles/commit/59ed40f005e3ee80d1d892975c66460730507fc1"><code>RangHo/dotfiles@59ed40f</code></a>)</dd>
+
+</dl>
+
+</section>
+<section id="slide-org843cfaa">
+<h3 id="org843cfaa">여기저기 기웃거리다가 느낀 점</h3>
+<p>
+최근 IDE의 필요성이 점점 더 낮아지는 중
+</p>
+
+<dl>
+<dt class="fragment appear">IDE는?</dt><dd class="fragment appear">느리고 무겁고 못생겼고 느리고&#x2026;</dd>
+<dt class="fragment appear">텍스트 편집기는 도움이 안 되잖아?</dt><dd class="fragment appear">하지만 <a href="https://langserver.org">Language Server Protocol</a>이 등장한다면 어떨까?</dd>
+<dt class="fragment appear">디버거도 못 붙이면서?</dt><dd class="fragment appear">하지만 <a href="https://microsoft.github.io/debug-adapter-protocol/">Debug Adapter Protocol</a>이 등장한다면 어떨까?</dd>
+
+</dl>
+
+<p class="fragment appear">
+"이래서 Visual Studio Code는 혁신이야!"
+</p>
+
+</section>
+<section>
+
+
+<div id="orgf77e3a5" class="figure">
+<p><img src="https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f914.svg" alt="1f914.svg" class="org-svg" width="450px" />
+</p>
+</div>
+
+<p class="fragment appear">
+"그거 Emacs는 20년 전부터 지원하던 건데&#x2026;"
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-org97b2e8a">
+<h2 id="org97b2e8a">그래서 Emacs가 뭔데</h2>
+<ul>
+<li>원래 이름은 EMACS (<b>E</b>​diting <b>MAC</b>​ro​<b>S</b>)</li>
+<li>1976년에 처음 공개됨</li>
+<li>이후로 많은 변종이 등장
+<ul>
+<li class="fragment appear">EINE, ZWEI (1978)</li>
+<li class="fragment appear">Multics Emacs (1978)</li>
+<li class="fragment appear">Gosling Emacs (1981)</li>
+<li class="fragment appear">CCA Emacs (1984)</li>
+<li class="fragment appear"><b>GNU Emacs</b> (1984)</li>
+
+</ul></li>
+
+</ul>
+
+</section>
+<section id="slide-orgac12585">
+<h3 id="orgac12585">GNU Emacs?</h3>
+<ul>
+<li class="fragment appear">GNU 프로젝트의 일부</li>
+<li class="fragment appear">크로스 플랫폼
+<ul>
+<li class="fragment appear">Windows</li>
+<li class="fragment appear">macOS</li>
+<li class="fragment appear">Linux</li>
+<li class="fragment appear">Android <i>&lt;&lt; NEW!</i></li>
+
+</ul></li>
+<li class="fragment appear"><b>C</b>​와 <b>Emacs Lisp</b>​로 구현되어 있음</li>
+
+</ul>
+
+</section>
+<section>
+
+
+<div id="orgf287a2d" class="figure">
+<p><img src="assets/emacs-src-languages.png" alt="emacs-src-languages.png" width="750px" />
+</p>
+</div>
+
+<ul>
+<li class="fragment appear">C 소스코드보다 Emacs Lisp 코드가 훨씬 더 많음
+<ul>
+<li class="fragment appear">운영체제와 소통하는 부분은 C</li>
+<li class="fragment appear">Emacs Lisp 인터프리터도 C</li>
+<li class="fragment appear">나머지는 전부 Emacs Lisp</li>
+
+</ul></li>
+<li class="fragment appear">Emacs는 텍스트 편집기가 아니다!</li>
+<li class="fragment appear">Emacs는 <b>Lisp 인터프리터이다</b>!!!</li>
+<li class="fragment appear">(거기에 텍스트 편집용 Lisp 코드를 곁들인)</li>
+
+</ul>
+
+
+</section>
+</section>
+<section>
+<section id="slide-org15b0b75">
+<h2 id="org15b0b75">그래서 Lisp는 또 뭔데</h2>
+<ul>
+<li class="fragment appear">원래 이름은 LISP (<b>LIS</b>​t <b>P</b>​rocessor)</li>
+<li class="fragment appear"><del>소괄호 지옥</del></li>
+<li class="fragment appear">언어의 모든 것을 리스트로 표현함</li>
+
+</ul>
+
+</section>
+<section>
+
+<div class="org-src-container">
+
+<pre style="width: 800px; font-size: 1.2em;"><code class="lisp" >(list 1 2 3) ; -&gt; '(1 2 3)
+</code></pre>
+</div>
+
+<div style="display: flex; flex: min-content;" data-fragment="5">
+  <img class="fragment appear" style="flex: min-content" src="assets/lisp-list-list.png" data-fragment-index="5" />
+  <img class="fragment appear" style="flex: min-content" src="assets/lisp-list-1.png" data-fragment-index="1" />
+  <img class="fragment appear" style="flex: min-content" src="assets/lisp-list-2.png" data-fragment-index="2" />
+  <img class="fragment appear" style="flex: min-content" src="assets/lisp-list-3.png" data-fragment-index="3" />
+  <img class="fragment appear" style="flex: min-content" src="assets/lisp-list-nil.png" data-fragment-index="4" />
+</div>
+
+<ul>
+<li class="fragment appear">Emacs를 구성하는 모든 Lisp 코드는 Lisp 자료구조임</li>
+<li class="fragment appear">자기 자신을 변화시키는 코드를 쉽게 구성할 수 있음</li>
+<li class="fragment appear">REPL! (<b>R</b>​ead, <b>E</b>​val, <b>P</b>​rint, <b>L</b>​oop!)</li>
+
+</ul>
+
+</section>
+<section id="slide-org5c819b5">
+<h3 id="org5c819b5">에디터의 <b>모든 것</b>​을 바꿀 수 있다?!</h3>
+<ul>
+<li class="fragment appear">기본적으로 Emacs는 그 자체로 에디터가 아님</li>
+<li class="fragment appear">Emacs Lisp 인터프리터 + Emacs Lisp 코드 = Emacs 텍스트 편집기</li>
+<li class="fragment appear">Emacs Lisp 코드가 자기 자신을 바꿀 수 있다면&#x2026;</li>
+<li class="fragment appear">&#x2026;텍스트 편집기를 구현하는 모든 것을 바꿀 수 있다?!</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-org53f159f">
+<h2 id="org53f159f">Case Study 1: <b>Evil</b></h2>
+</section>
+<section>
+
+<p>
+이런 확장성을 떠나서, 기본값 Emacs에는 치명적인 단점이 있는데&#x2026;
+</p>
+
+
+<div id="org0749a64" class="figure">
+<p><img src="assets/emacs-pinky.png" alt="emacs-pinky.png" class="fragment appear" />
+</p>
+</div>
+
+</section>
+<section id="slide-orga93d871">
+<h3 id="orga93d871">Emacs 사용자 중에 새끼손가락이 성한 사람이 없다</h3>
+<p>
+Emacs는 <i>modifier</i> 키를 매우매우 적극적으로 이용하는 편&#x2026;
+</p>
+
+<dl>
+<dt class="fragment appear"><code>M-x</code></dt><dd class="fragment appear">명령어 입력 창 열기</dd>
+<dt class="fragment appear"><code>C-x C-f</code></dt><dd class="fragment appear">파일 열기</dd>
+<dt class="fragment appear"><code>C-x C-s</code></dt><dd class="fragment appear">파일 저장</dd>
+<dt class="fragment appear"><code>C-x C-c</code></dt><dd class="fragment appear">Emacs 종료</dd>
+<dt class="fragment appear"><code>C-u 20 C-x e</code></dt><dd class="fragment appear">마지막으로 실행한 매크로를 20번 반복해서 실행</dd>
+
+</dl>
+
+<p class="fragment appear">
+Control 키와 Caps Lock 키를 바꾸는 것은 필수!
+</p>
+
+<p class="fragment appear">
+하지만 그렇더라도 새끼손가락이 너무 많이 쓰인다&#x2026;
+</p>
+
+</section>
+<section id="slide-orge3e1c1f">
+<h3 id="orge3e1c1f">천 리 길도 벤치마킹부터</h3>
+<p>
+Vim의 modal editing은 굉장히 잘 설계한 편!
+</p>
+
+<ul>
+<li>방향키 <code>h</code>, <code>j</code>, <code>k</code>, <code>l</code> 모두 손에서 가장 힘이 센 손가락에 매핑되어 있음</li>
+<li>여러 레이어를 분리하여 modifier 없이도 키보드 전체를 사용할 수 있음</li>
+<li>커맨드 라인에서 실행할 수 있는 명령 중, 자주 사용하는 명령은 짧고 간결함</li>
+
+</ul>
+
+<p class="fragment appear">
+<b>그러면 Vim 거를 훔치자!</b>
+</p>
+
+</section>
+<section id="slide-orgd0ab5f1">
+<h3 id="orgd0ab5f1">해결법: 베끼기</h3>
+<p>
+<b>Evil</b> (<b>E</b>​xtensible <b>Vi</b> <b>L</b>​ayer)
+</p>
+
+<p>
+현존하는 가장 완벽한 Vi(m) 모달 에디팅 구현체
+</p>
+
+<p>
+Vim의 모든 주요 기능을 지원함
+</p>
+
+<ul>
+<li class="fragment appear">텍스트 오브젝트</li>
+<li class="fragment appear">매크로</li>
+<li class="fragment appear">내비게이션</li>
+<li class="fragment appear">명령어</li>
+<li class="fragment appear">등등&#x2026;</li>
+
+</ul>
+
+</section>
+<section id="slide-org91f2967">
+<h3 id="org91f2967">그리고 점수를 더 잘 받기</h3>
+<p>
+이 모든 기능과 Emacs Lisp의 확장성이 더해지면&#x2026;
+</p>
+
+<iframe width="800" height="450" src="https://www.youtube.com/embed/sAXZbfLzJUg?si=TguBEWlwdO3f-oIo" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+</section>
+<section>
+
+<p>
+기존 Emacs 기능과 Vim의 모달 에디팅을 결합한 예시로&#x2026;
+</p>
+
+<dl class="fragment appear">
+<dt><code>evil-mode</code></dt><dd>Emacs 기능을 Vim에서 사용하는 것과 비슷한 방식으로 대체함</dd>
+<dt><code>god-mode</code></dt><dd>기존 Emacs에서 사용하는 단축키를 유지하되, modifier 키를 누르지 않아도 되게! <br />
+예를 들어, <code>&lt;leader&gt; x f</code>​는 <code>C-x C-f</code>​와 같다</dd>
+
+</dl>
+
+<p class="fragment appear">
+이 둘을 섞으면 <a href="https://github.com/RangHo/dotfiles/blob/1bc86995c4f436f627528423d4986499cb763ceb/emacs/.config/emacs/usr/core-hades.el" class="fragment appear"><code>hades-mode</code></a>!
+</p>
+
+<p class="fragment appear">
+예를 들어, <code>treemacs</code>​에서 "Personal" 워크스페이스 안에 다른 프로젝트를 추가하려면&#x2026;
+</p>
+
+<dl>
+<dt class="fragment appear">Before</dt><dd class="fragment appear"><code>C-c RET C-c C-w s personal TAB RET C-c C-p a new-project RET</code></dd>
+<dt class="fragment appear">After</dt><dd class="fragment appear"><code>, c RET , c w SPC s personal TAB RET , c p SPC a new-project RET</code></dd>
+
+</dl>
+
+</section>
+</section>
+<section>
+<section id="slide-orga261264">
+<h2 id="orga261264">Case Study 2: <b>Magit</b></h2>
+</section>
+<section>
+
+<p>
+<code>evil-mode</code>​는 개발 속도를 향상시켜주는 <i>minor mode</i> 중 하나
+</p>
+
+<p>
+<code>magit</code>​은 Git을 사용하는 개발자라면 필수적으로 사용해야 하는 <i>major mode</i> 중 하나
+</p>
+
+<dl class="fragment appear">
+<dt>Major mode?</dt><dd>지금 열고 있는 파일을 어떻게 편집할지 (정확히는 버퍼의 편집 방식을 결정하는) 모드</dd>
+<dt>Minor mode?</dt><dd>Major mode의 동작을 보완하거나 변경하는 모드</dd>
+
+</dl>
+
+</section>
+<section id="slide-org14770e3">
+<h3 id="org14770e3">에이, 다른 것도 많은데 굳이?</h3>
+<p>
+다른 에디터에서도 Git 클라이언트는 있다!
+</p>
+
+<dl>
+<dt class="fragment appear">Vim</dt><dd class="fragment appear"><code>fugitive.vim</code></dd>
+<dt class="fragment appear">Visual Studio Code</dt><dd class="fragment appear">GitLens</dd>
+<dt class="fragment appear"><del>Terminal</del></dt><dd class="fragment appear"><del>Gitk</del></dd>
+
+</dl>
+
+<p class="fragment appear">
+하지만 <code>magit</code>​에 비하면&#x2026;..
+</p>
+
+</section>
+<section id="slide-orgbab3e57">
+<h3 id="orgbab3e57">Magit 사용해보기!</h3>
+<p>
+백문이 불여일견이다! <code>magit</code>​으로 아래 레포지토리를 만들어보자!
+</p>
+
+
+<div id="org0ccec8a" class="figure">
+<p><img src="assets/magit-goal-graph.png" alt="magit-goal-graph.png" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-org7c18243">
+<h2 id="org7c18243">Case Study 3: <b>Org-mode</b></h2>
+</section>
+<section>
+
+<ul>
+<li class="fragment appear"><code>org-mode</code>​는 기본적으로 마크업 언어!</li>
+<li class="fragment appear">== <code>org-mode</code>​는 <i>major mode</i>!</li>
+<li class="fragment appear"><code>magit</code>​과 달리, 파일 편집을 담당하는 major mode</li>
+<li class="fragment appear">주로&#x2026;
+<ul>
+<li class="fragment appear">블로그나 다른 글을 작성할 때</li>
+<li class="fragment appear">할 일 목록을 작성할 때 (<code>org-agenda</code>)</li>
+<li class="fragment appear">사람이 읽기 쉽고, 기계도 이해하기 좋은 공용 마크업으로 (e.g. <code>treemacs-edit-workspaces</code>)</li>
+<li class="fragment appear"><i>Literate programming</i></li>
+
+</ul></li>
+
+</ul>
+
+</section>
+<section id="slide-org5dd7f7e">
+<h3 id="org5dd7f7e">타의 추종을 불허하는 내보내기 기능</h3>
+<p>
+<code>org-mode</code>​로 작성한 텍스트는 얼마든지 다른 포맷으로 내보낼 수 있다!
+</p>
+
+<ul>
+<li class="fragment appear">일반 ASCII 텍스트 파일 (<code>ox-ascii</code>)</li>
+<li class="fragment appear">LaTeX 파일 (<code>ox-latex</code>)</li>
+<li class="fragment appear">HTML 파일 (<code>ox-html</code>)</li>
+<li class="fragment appear">Markdown 파일 (<code>ox-md</code>)</li>
+<li class="fragment appear">ODT 문서 (<code>ox-odt</code>)</li>
+<li class="fragment appear">Man 페이지 도움말 (<code>ox-man</code>)</li>
+<li class="fragment appear">기타등등&#x2026;</li>
+
+</ul>
+
+</section>
+<section id="slide-org8e76180">
+<h3 id="org8e76180">&#x2026;그 기능을 직접 만들기?!</h3>
+<p>
+모든 내보내기 백엔드는 <code>ox</code> 내보내기 엔진을 기반으로 작성된 것!
+</p>
+
+<dl>
+<dt class="fragment appear"><a href="https://ox-hugo.scripter.co/" class="fragment appear"><code>ox-hugo</code></a></dt><dd class="fragment appear">Hugo 블로그 엔진으로 바로 배포할 수 있는 Blackfriday 마크다운으로 변환</dd>
+<dt class="fragment appear"><a href="https://github.com/RangHo/ox-svelte" class="fragment appear"><code>ox-svelte</code></a></dt><dd class="fragment appear">Svelte에서 바로 <code>import</code>​할 수 있도록 문서를 Svelte 컴포넌트로 변환</dd>
+
+</dl>
+
+<p class="fragment appear">
+여기저기서 사용하는 문법을 하나로 통합할 수 있다!
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-orge13e682">
+<h2 id="orge13e682">Case Study 4: <b>Org-roam</b></h2>
+</section>
+<section>
+
+<dl>
+<dt><i>Zettelkasten Method</i> (메모 상자 기법)</dt><dd>아이디어, 노트, 지식 등을 작은 메모지에 기록하고, 서로 연결고리를 만들어 추후 참조하기 쉽도록 보존하는 노트 작성 기법.</dd>
+
+</dl>
+
+</section>
+<section id="slide-org69a6a76">
+<h3 id="org69a6a76">전뇌인간<sub><del>에네</del></sub>이 되기</h3>
+<div style="display: flex;">
+<div style="flex: 2;">
+<p class="fragment appear">
+메모 상자 기법으로 작성한 노트를 네트워크에 공유하거나 백업하는 것을&#x2026;
+</p>
+
+<ul>
+<li class="fragment appear">디지털 가드닝<sub>Digital Gardening</sub></li>
+<li class="fragment appear">개인 지식 창고<sub>Personal Knowledge Base</sub></li>
+<li class="fragment appear">세컨드 브레인<sub>Second Brain</sub></li>
+<li class="fragment appear">브레인덤프<sub>Braindump</sub></li>
+<li class="fragment appear">&#x2026;</li>
+
+</ul>
+
+<p class="fragment appear">
+여기서 <code>org-mode</code>​의 ID 링크를 이용한 메모 상자 프로그램이 <code>org-roam</code>!
+</p>
+</div>
+
+<div style="flex: 1;">
+
+<div id="org95b84ba" class="figure">
+<p><img src="assets/ene.png" alt="ene.png" />
+</p>
+</div>
+</div>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-org0e0b2fd">
+<h2 id="org0e0b2fd">당신도 쓸 수 있다!</h2>
+<p>
+Emacs가 다른 에디터에 비해서 진입장벽이 높은 것은 사실
+</p>
+
+
+<div id="org1296d8a" class="figure">
+<p><img src="assets/learning-curves.jpg" alt="learning-curves.jpg" />
+</p>
+</div>
+
+</section>
+<section id="slide-org2247826">
+<h3 id="org2247826">이미 Vim에 발을 담궈 본 당신에게</h3>
+
+<div id="orgc6cc43e" class="figure">
+<p><img src="assets/spacemacs.svg" alt="spacemacs.svg" class="org-svg" width="300px" />
+</p>
+</div>
+
+<p>
+<b>Spacemacs</b>​는 Emacs에 <code>evil-mode</code>​를 포함한 여러 패키지가 미리 설치된 <b>배포판</b>
+</p>
+
+</section>
+<section>
+
+
+<div id="orge2d11a6" class="figure">
+<p><img src="assets/spacemacs-screenshot.png" alt="spacemacs-screenshot.png" width="1000px" />
+</p>
+</div>
+
+<p>
+Vim에 익숙한 사람이라면 에디팅 방식에는 금방 적응할 수 있다!
+</p>
+
+<p>
+다만 Spacemacs에 너무 익숙해지면 정작 Emacs에서 제공하는 막강한 기능을 전부 활용하기 힘들 수도 있으니 주의.
+</p>
+
+</section>
+<section id="slide-orgae27f2c">
+<h3 id="orgae27f2c">첫 발을 떼기가 힘든 당신에게</h3>
+
+<div id="org37acc49" class="figure">
+<p><img src="assets/emacs-screenshot.png" alt="emacs-screenshot.png" />
+</p>
+</div>
+
+<p>
+기본적으로 Emacs를 설치하면 다른 에디터처럼 메뉴를 포함한 UI가 제공됨!
+</p>
+
+</section>
+<section>
+
+<ul>
+<li>마우스 사용 가능</li>
+<li>엄청나게 자세한 <code>*Help*</code> 도움말 페이지</li>
+<li><code>customize</code> 설정 GUI</li>
+
+</ul>
+
+<p>
+GUI의 도움을 받아가면서 기본적인 사용 방법에 익숙해졌다면, 추천하는 스타터 설정을 적용해보자!
+</p>
+
+<ul>
+<li>Emacs 컨트리뷰터 <a href="https://github.com/purcell/emacs.d">Steve Purcell의 설정 파일 모음</a></li>
+<li>FOSS 소식 유튜버 <a href="https://github.com/SystemCrafters/crafted-emacs">System Crafters에서 제공하는 설정 파일 모음</a></li>
+
+</ul>
+
+
+</section>
+</section>
+<section>
+<section id="slide-org1590e5f">
+<h2 id="org1590e5f">TL; DR</h2>
+<ul>
+<li class="fragment appear">사람마다 생김새가 다르듯이, 사람마다 편하다고 느끼는 점도 다름</li>
+<li class="fragment appear">모든 에디터는 어떤 방식으로든 <b>개인화</b>​할 수 있는 부분이 존재</li>
+<li class="fragment appear"><b>나를 에디터에게 맞출 것인가?</b> vs. <b>에디터를 나에게 맞출 것인가?</b></li>
+<li class="fragment appear"><p>
+나에게 맞출 수 있는 에디터가 무엇이 있을까?
+</p>
+
+<p class="fragment apear">
+결국 어디로 돌고 돌아도 결론은 <b>Emacs</b>.
+</p></li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgd8d2a90">
+<h2 id="orgd8d2a90">Q&amp;A</h2>
+<div class="outline-text-2" id="text-orgd8d2a90">
+</div>
+</section>
+<section id="slide-orge13f8a6">
+<h3 id="orge13f8a6">어떤 방식으로 Emacs를 튜닝해서 쓰시나요?</h3>
+<p class="fragment appear">
+배포판에 구애받지 않는 <b>바닐라 Emacs</b>!
+</p>
+
+<p class="fragment appear">
+원래 설정 파일은 기능 하나당 파일 하나로 구분&#x2026;
+</p>
+
+<p class="fragment appear">
+현재는 <i>literate programming</i> 방법을 이용해서 <code>org-mode</code>​로 코드 작성 중
+</p>
+</section>
+</section>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4/plugin/math/math.js"></script>
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: true,
+progress: true,
+history: false,
+center: true,
+slideNumber: 'c',
+rollingLinks: false,
+keyboard: true,
+mouseWheel: false,
+fragmentInURL: false,
+hashOneBasedIndex: false,
+pdfSeparateFragments: true,
+overview: true,
+width: "90%",
+
+transition: 'linear',
+transitionSpeed: 'default',
+
+// Plugins with reveal.js 4.x
+plugins: [ RevealHighlight, RevealMath ],
+
+// Optional libraries used to extend reveal.js
+dependencies: [
+]
+
+});
+</script>
+</body>
+</html>
