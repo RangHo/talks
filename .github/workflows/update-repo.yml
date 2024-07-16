@@ -10,12 +10,15 @@ jobs:
       pdfs: ${{ steps.find-pdfs.outputs.matrix }}
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Find all PDF talks
         id: find-pdfs
         run: |
           find . -name 'index.pdf' \
             | xargs dirname \
-            | xargs basename \
+            | xargs basename -a \
             | jq -R \
             | jq -cs '{ "talk": . }' \
             > matrix.json
