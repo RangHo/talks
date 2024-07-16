@@ -1,0 +1,33 @@
+name: Update repository
+
+on: [push, workflow_dispatch]
+
+jobs:
+  find-talks:
+    name: Find all talks
+    runs-on: ubuntu-latest
+    outputs:
+      pdfs: ${{ steps.find-pdfs.outputs.matrix }}
+
+    steps:
+      - name: Find all PDF talks
+        id: find-pdfs
+        run: |
+          find . -name 'index.pdf' \
+            | xargs dirname \
+            | xargs basename \
+            | jq -R \
+            | jq -cs '{ "talk": . }' \
+            > matrix.json
+          echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
+
+  build-pdfs:
+    name: Build PDF talks
+    needs:
+      - find-talks
+    strategy:
+      matrix: ${{ fromJson(needs.find-talks.outputs.pdfs) }}
+    uses: ./.github/workflows/build-pdf.yml
+    with:
+      name: ${{ matrix.talk }}
+      

@@ -1,0 +1,38 @@
+name: Build redirection page to PDF file
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        required: true
+        type: string
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add redirection page
+        run: |
+          cd ${{ inputs.name }}
+          cat <<EOF > index.html
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta http-equiv="refresh" content="0; url=index.pdf">
+            </head>
+            <body>
+              <p>If you are not redirected automatically, follow this <a href="index.pdf">link</a>.</p>
+            </body>
+          </html>
+          EOF
+
+      - name: Upload as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.name }}
+          path: ${{ inputs.name }}
