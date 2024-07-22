@@ -62,4 +62,7 @@ jobs:
     needs:
       - build-pdfs
       - build-orgs
+    permissions:
+      pages: write
+      id-token: write
     uses: ./.github/workflows/deploy-pages.yml
