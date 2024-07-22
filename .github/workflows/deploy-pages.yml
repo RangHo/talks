@@ -1,0 +1,21 @@
+name: Deploy to GitHub Pages
+
+on: workflow_call
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download talks
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

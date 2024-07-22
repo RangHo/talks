@@ -55,3 +55,11 @@ jobs:
     uses: ./.github/workflows/build-org.yml
     with:
       name: ${{ matrix.talk }}
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.ref == 'refs/heads/main'
+    needs:
+      - build-pdfs
+      - build-orgs
+    uses: ./.github/workflows/deploy-pages.yml
