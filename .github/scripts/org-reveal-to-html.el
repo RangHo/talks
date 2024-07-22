@@ -9,10 +9,9 @@
 ;; This script is used to build HTML presentations with Org-re-reveal.  It is
 ;; intended to be used as a command line script.  To use it, run:
 ;;
-;;     emacs --script build-org-reveal.el input.org
+;;     emacs --script org-reveal-to-html.el input.org
 ;;
-;; This will take the Org file \"input.org\" and build it into an HTML file
-;; \"output.html\".
+;; This will take the Org file \"input.org\" and build it into an HTML file.
 
 (require 'package)
 
@@ -32,6 +31,9 @@
 (add-to-list 'org-export-filter-paragraph-functions #'org-re-reveal-citeproc-filter-cite)
 
 (let ((input-file (nth 0 command-line-args-left)))
-  (with-temp-buffer
-    (insert-file-contents input-file)
-    (org-re-reveal-export-to-html)))
+  (find-file input-file)
+  (org-re-reveal-export-to-html))
+
+(kill-emacs 0)
+
+;;; org-reveal-to-html.el ends here
