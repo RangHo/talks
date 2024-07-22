@@ -1,0 +1,31 @@
+name: Build HTML presentation from Org-mode
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        required: true
+        type: string
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Emacs
+        uses: purcell/setup-emacs@master
+
+      - name: Convert Org file to HTML
+        run: |
+          cd ${{ inputs.name }}
+          emacs --script $GITHUB_WORKSPACE/.github/scripts/org-reveal-to-html.el ./index.org
+          rm ./index.org
+
+      - name: Upload as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.name }}
+          path: ${{ inputs.name }}

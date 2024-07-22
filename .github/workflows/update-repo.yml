@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       pdfs: ${{ steps.find-pdfs.outputs.matrix }}
+      orgs: ${{ steps.find-orgs.outputs.matrix }}
 
     steps:
       - name: Checkout repository
@@ -17,6 +18,17 @@ jobs:
         id: find-pdfs
         run: |
           find . -name 'index.pdf' \
+            | xargs dirname \
+            | xargs basename -a \
+            | jq -R \
+            | jq -cs '{ "talk": . }' \
+            > matrix.json
+          echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
+
+      - name: Find all Org-mode talks
+        id: find-orgs
+        run: |
+          find . -name 'index.org' \
             | xargs dirname \
             | xargs basename -a \
             | jq -R \
@@ -34,3 +46,12 @@ jobs:
     with:
       name: ${{ matrix.talk }}
       
+  build-orgs:
+    name: Build Org-mode talks
+    needs:
+      - find-talks
+    strategy:
+      matrix: ${{ fromJson(needs.find-talks.outputs.orgs) }}
+    uses: ./.github/workflows/build-org.yml
+    with:
+      name: ${{ matrix.talk }}
