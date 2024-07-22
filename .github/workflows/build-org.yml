@@ -17,6 +17,8 @@ jobs:
 
       - name: Setup Emacs
         uses: purcell/setup-emacs@master
+        with:
+          version: 29.4
 
       - name: Convert Org file to HTML
         run: |
