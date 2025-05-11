@@ -23,8 +23,14 @@ jobs:
       - name: Convert Org file to HTML
         run: |
           cd ${{ inputs.name }}
-          emacs --script $GITHUB_WORKSPACE/.github/scripts/org-reveal-to-html.el ./index.org
-          rm ./index.org
+          target=$(find . -type f -name 'index.*.org' | head -n 1)
+          case $target in
+            *reveal*)
+              emacs --script $GITHUB_WORKSPACE/.github/scripts/org-reveal-to-html.el $target
+              mv index.reveal.html index.html
+              ;;
+          esac
+          rm $target
 
       - name: Upload as artifact
         uses: actions/upload-artifact@v4

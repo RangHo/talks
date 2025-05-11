@@ -28,7 +28,7 @@ jobs:
       - name: Find all Org-mode talks
         id: find-orgs
         run: |
-          find . -name 'index.org' \
+          find . -name 'index.*.org' \
             | xargs dirname \
             | xargs basename -a \
             | jq -R \
