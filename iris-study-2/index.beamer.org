@@ -1,0 +1,539 @@
+#+title: Iris Study (Week 2)
+#+subtitle: ~pure~, ~lang~, ~specification~
+#+author: Juhun Lee
+#+options: h:2 toc:nil num:t ':t
+#+latex_class: beamer
+#+latex_class_options: [presentation,table,10pt,aspectratio=169]
+#+latex_header_extra: \institute{FCAI Lab \\Yonsei University}
+#+columns: %45item %10beamer_env(env) %10beamer_act(act) %4beamer_col(col)
+#+beamer_theme: fcai
+
+* Basics
+
+** What is Iris?
+#+begin_export latex
+\begin{center}
+Iris is a \textit{\textbf<5>{higher-order} \textbf<4>{concurrent} \textbf<3>{separation logic} \textbf<2>{framework}}.
+\end{center}
+#+end_export
+
+- Framework :: @@beamer:<2->@@ Iris consists of base logic; thus, it can be instantiated with any programming languages.
+- Separation Logic :: @@beamer:<3->@@ Iris provides logical bases to reason about programs that deal with resource ownership.
+- Concurrency :: @@beamer:<4->@@ Iris can also describe programs that has concurrent constructions, requiring threads to separate and delegate its resources.
+- Higher-order :: @@beamer:<5->@@ When reasoning with Iris, program predicates may depend on other predicates.
+
+** Calling dibs on resources
+- Programs can claim pieces of the /world/
+- The ownership of these pieces are:
+  - Exclusive :: only one entity can claim ownership
+  - Transferable :: one entity can transfer ownership to another
+  - Composable :: multiple resources owned by a single entity can be combined into bigger chunk
+
+** Proving stuff with Iris
+- Iris propositions are called ~iProp Σ~
+- ~Σ : gFunctors~ describes resources that are available (heaps, invariants, etc.)
+- ~iProp~ propositions are proven in Iris Proof Mode (IPM)
+  - Iris goals look like either ~⊢ P~ or ~P ⊢ Q~
+  - Regular Rocq hypotheses are called /non-spatial hypotheses/
+  - Resource-dependent hypotheses are called /spatial hypotheses/
+
+** Example: trivial proof of ~P ⊢ P~
+#+begin_src coq
+  Lemma asm (P : iProp Σ) : P ⊢ P.
+  Proof.
+    iIntros "H".
+    iApply "H".
+  Qed.
+#+end_src
+
+** Separating conjunction: ~P ∗ Q~
+- Core connective of separation logic
+- "I own /both/ ~P~ and ~Q~, but these resources are disjoint."
+
+*** Example: Commutativity
+#+begin_src coq
+  Lemma sep_conj_comm (P Q : iProp Σ) : P ∗ Q ⊢ Q ∗ P.
+  Proof.
+    iIntros "[HP HQ]".
+    iSplitL "HQ".
+    - iApply "HQ".
+    - iApply "HP".
+  Qed.
+#+end_src
+
+** Separating implication: ~P -∗ Q~
+- Pronounced as /magic wand/ (or just /wand/)
+- "If I get access to the resource ~P~, then I can produce ~Q~."
+
+*** Example: Modus Ponens
+#+begin_src coq
+  Lemma sep_imp_modus_ponens (P Q : iProp Σ) : P -∗ (P -∗ Q) -∗ Q.
+  Proof.
+    iIntros "HP HPQ".
+    iApply "HPQ".
+    iApply "HP".
+  Qed.
+#+end_src
+
+* Pure
+
+** ~Prop~ vs. ~iProp~
+- Regular Rocq proposition ~φ : Prop~ can be "Irisified" by ~⌜φ⌝ : iProp Σ~
+- An Iris proposition is /pure/ if ~P ⊣⊢ ⌜φ⌝~ for some ~φ : Prop~
+- Pure embedding allows re-using existing Rocq reasoning inside Iris proofs
+
+** Introducing pure facts
+- ~iPureIntro~ exits Iris Proof Mode and turns a goal ~⌜φ⌝~ itno a Rocq goal ~φ~
+- *This tactic will discard the spatial context!*
+
+#+begin_src coq
+  Lemma pure_eq : ⊢ ⌜5 = 5⌝.
+  Proof.
+    iPureIntro.
+    reflexivity.
+  Qed.
+#+end_src
+
+** Eliminating pure assumptions
+- Hypotheses of form ~⌜φ⌝~ in spatial context can be moved to non-spatial context
+- Use ~"%H"~ construction to move ~H: φ~ to the non-spatial (i.e. Rocq) context
+
+#+begin_src coq
+  Lemma eq_elm {A} (P : A -> iProp Σ) (x y : A) :
+    ⌜x = y⌝ -∗ P x -∗ P y.
+  Proof.
+    iIntros "%Heq HP".
+    rewrite -Heq.
+    iApply "HP".
+  Qed.
+#+end_src
+
+** Automatic purification
+- Iris has typeclasses like ~IntoPure~ and ~FromPure~
+- Specializations already exist for many pure propositions
+- ~iPureIntro~ tactic often works even when the goal is not syntactically in ~⌜φ⌝~ form!
+
+* Lang
+
+** What is HeapLang?
+#+begin_export latex
+\begin{center}
+HeapLang is an \textbf<2>{untyped} \textbf<3>{ML-like} \textbf<4>{concurrent} language with a \textbf<5>{heap}.
+\end{center}
+#+end_export
+- Untyped :: @@beamer:<2->@@ there is only one “value” universe (no static types)
+- ML-like :: @@beamer:<3->@@ ~let~​s, lambdas, recursion, pattern matching, higher-order functions
+- Concurrent :: @@beamer:<4->@@ has ~Fork~ primitive and libraries built on top (~spawn~, ~par~)
+- Heap :: @@beamer:<5->@@ mutable references (~ref~, ~!~, ~<-~​) and atomic ~CmpXchg~
+
+** Evaluating HeapLang
+- Call-by-value :: arguments are evaluated before entering the function body
+- Evaluation order :: right-to-left order (i.e. in ~e1 e2~, ~e2~ is evaluated first)
+- Values :: syntacally prefixed by ~#~ (e.g. ~#1~, ~#true~, ~#()~)
+
+** Integers and arithmetic operations
+- Integers are values like ~#1~ or ~#42~
+- Arithmetic operations use regular operators (~+~, ~-~, ~*~, etc.)
+
+#+begin_src coq
+  Example arith : expr :=
+    #1 + #2 + #3.
+#+end_src
+
+** Booleans and conditionals
+- Boolean values are ~#true~ and ~#false~
+- Boolean gate operations (~||~ and ~&&~) and comparisons (~=~, etc.)
+
+#+begin_src coq
+  Example booleans : expr :=
+    (arith = #7) && #true || (#true = #false).
+
+  Example if_then_else : expr :=
+    if: booleans then #() else #false.
+#+end_src
+
+** Let-bindings and variables
+- HeapLang variables look like strings
+- ~let~ bindings are syntax sugar for lambdas
+
+  #+begin_src coq
+    Example lets : expr :=
+      let: "a" := #4 in
+      let: "b" := #2 in
+      "a" + "b".
+  #+end_src
+
+** Pairs and projections
+- Pairs are native: ~(e1, e2)~
+- Projections: ~Fst~ and ~Snd~
+
+#+begin_src coq
+  Example pairs : expr :=
+    let "p" := (#40, #1 + #1) in
+    Fst "p" _ Snd "p".
+#+end_src
+
+** Tuples
+- N-tuple notations like ~(#1, #2, #3, #4)~ is actually a nested pairs
+- Opposite to ~cons~ list found in other languages
+
+#+begin_src coq
+  Example tuples : expr :=
+    let: "t1" := (#1, #2, #3, #4) in
+    let: "t2" := (((#1, #2), #3), #4) in
+    (Snd (Fst (Fst "t1")) = Snd (Fst (Fst "t2"))).
+#+end_src
+
+** Sums and pattern matching
+- Sums: ~InjL e~ and ~InjR e~
+- Pattern matching: ~match: e with ... end~
+
+#+begin_src coq
+  Example sums : expr :=
+    let "r" := InjR #1 in
+    match: "r" with
+      InjL "_" => #0
+    | InjR "n" => "n" + #1
+    end.
+#+end_src
+
+** Functions
+- Functions are first class
+- They can take multiple arguments at once
+
+  #+begin_src coq
+    Example lambda : expr :=
+      let: "add5" := (λ: "x", "x" + #5) in
+      let: "double" := (λ: "x", "x" * #2) in
+      let: "compose" := (λ: "f" "g", (λ: "x", "g" ("f" "x"))) in
+      ("compose" "add5" "double") #5.
+  #+end_src
+
+** Recursive functions
+- Recursive functions require fixpoint operator
+- Different syntax from regular functions
+
+#+begin_src coq
+  Example recursion : expr :=
+    let: "fac" :=
+      rec: "f" "n" :=
+        if: "n" = #0 then #1 else "n" * "f" ("n" - #1)
+    in ("fac" #4, "fac" #5).
+#+end_src
+
+** Reference allocation
+- It is possible to allocate from heap with ~ref v~
+- This finds a fresh heap location, stores ~v~, and returns the location
+
+#+begin_src coq
+  Example alloc : expr :=
+    let: "l1" := ref (#0) in
+    let: "l2" := ref (#0) in
+    ("l1", "l2").
+#+end_src
+
+** Reference read and write
+- Read operation is called "load"
+- Write operation is called "store"
+- Multiple operations can be sequenced
+
+#+begin_src coq
+  Example read_write : expr :=
+    let: "l" := ref #5 in
+    "l" <- #6 ;;
+    !"l".
+#+end_src
+
+** Atomic "compare-and-change"
+- ~CmpXchg l v1 v2~ is a special atomic read-modify-write operation:
+  1. read current value from location ~l~
+  2. if the current value is equal to ~v1~, write ~v2~ to ~l~
+  3. if not, do nothing
+  4. return a pair of the updated value and boolean indicating whether the value was changed
+
+#+begin_src coq
+  Example cmpxchg_fail : expr :=
+    let: "l" := ref #5 in
+    CmpXchg "l" #6 #7.
+
+  Example cmpxchg_suc : expr :=
+    let: "l" := ref #5 in
+    CmpXchg "l" #5 #7.
+#+end_src
+
+** CAS
+- It stands for "compare-and-set" operation
+- A variant of ~CmpXchg~ that returns only the boolean
+
+#+begin_src coq
+  Example cas : expr :=
+    let: "l" := ref #5 in
+    if: CAS "l" #6 #7 then
+      #()
+    else
+      let: "a" := !"l" in
+      if: CAS "l" #5 #7 then
+        let: "b" := !"l" in ("a", "b")
+      else
+        #().
+#+end_src
+
+** Concurrency primitive
+- HeapLang has one concurrency primitive called ~Fork e~:
+  1. new thread is created to run ~e~
+  2. parent thread continues immediately
+  3. return value of ~e~ is discarded
+
+#+begin_src coq
+  Example fork : expr :=
+    let: "l" := ref #5 in
+    Fork ("l" <- #7) ;;
+    !"l".
+#+end_src
+
+** Structured concurrency
+- More advanced concurrency management is built with ~Fork~
+- ~spawn (λ: "_", e)~:
+  1. start a new thread running ~e~
+  2. return a "handle"
+- ~spawn.join handle~:
+  1. wait for the ~spawn~​ed thread identified by ~handle~
+  2. return its result
+
+#+begin_src coq
+  Example spawn_join : expr :=
+    let: "l" := ref #5 in
+    let: "handle" := spawn (λ: "_", "l" <- #6 ;; #2) in
+    let: "res" := spawn.join "handle" in
+    let: "v" := !"l" in
+    ("res", "v").
+#+end_src
+
+** Parallelism
+- This time, two threads run in parallel
+- Both threads are awaited, then a pair of results is returned
+
+#+begin_src coq
+  Example par : expr :=
+    let: "l" := ref #5 in
+    let: "res" := (!"l" + #1) ||| (!"l" + #2) in
+    Fst "res" + Snd "res".
+#+end_src
+
+* Specifications
+
+** Weakest precondition (WP)
+- The main specification construct is /weakest precondition/
+- Shape: ~WP e {{ v, Φ v }}~
+  - ~e~ :: HeapLang expression
+  - ~v~ :: return value (if ~e~ terminates)
+  - ~Φ~ :: postcondition predicate on the return value
+- "If ~e~ terminates with value ~v~, then ~Φ v~ holds."
+- This is a /partial correctness/ statement (it does not promise termination)
+
+** Example: arithmetic specification
+#+begin_src coq
+  Example arith : expr :=
+    #1 + #2 * #3 + #4 + #5.
+
+  Lemma arith_spec : ⊢ WP arith {{ v, ⌜v = #16⌝ }}.
+  Proof.
+    rewrite /arith.
+    wp_op.    (* Symbolically execute a single arithmetic operation. *)
+    wp_pure.  (* Discharge a single pure computation step. *)
+    wp_pures. (* Discharge pure computations steps as much as possible. *)
+    done.     (* Close trivial goals. *)
+  Qed.
+#+end_src
+
+** Points-to predicate
+- In Iris, heap ownership is described with /points-to/ predicate ~l ↦ v~
+- "I own the heap cell at location ~l~ and it currently stores value ~v~."
+- Disjoint heaps compose with ~∗~: ~l1 ↦ #1 ∗ l2 ↦ #2~
+
+** Example: ref/load/store pattern
+#+begin_src coq
+  Example prog : expr :=
+    let: "x" := ref #1 in
+    "x" <- !"x" + #2;;
+    !"x".
+
+  Lemma prog_spec : ⊢ WP prog {{ v, ⌜v = #3⌝ }}.
+  Proof.
+    rewrite /prog.
+    wp_alloc l as "Hl". (* Hl : l ↦ #1 *)
+    wp_let.
+    wp_load.            (* Use Hl. *)
+    wp_op.
+    wp_store.           (* Update Hl to l ↦ #3. *)
+    wp_load.
+    iModIntro.          (* Remove a modality around the post. *)
+    done.
+  Qed.
+#+end_src
+
+** Properties of points-to predicate
+- Ownership of the same location cannot be "duplicated"
+- ~l ↦ v ∗ l ↦ v' ⊢ False~
+- Thus, sharing a mutable location across threads is non-trivial
+
+** Atomic heap primitive
+- As a reminder, ~CmpXchg l v1 v2~ does the following:
+  1. reads current value ~v~
+  2. if ~v = v1~, writes ~v2~ (success)
+  3. otherwise, does nothing (failure)
+  4. returns ~(v, didSwap?)~
+- Proof tactic: ~wp_cmpxchg as Hsuc | Hfail~
+  - success branch gives ~Hsuc : v = v1~ and updates points-to to ~l ↦ v2~
+  - failure branch gives ~Hfail : v ≠ v1~ and points-to stays the same
+- Shortcuts:
+  - ~wp_cmpxchg_suc~ when success is obvious
+  - ~wp_cmpxchg_fail~ when failure is obvious
+
+** Example: spec with branching (~CmpXchg~)
+#+begin_src coq
+  Example cmpXchg_0_to_10 (l : loc) : expr :=
+    CmpXchg #l #0 #10.
+
+  Lemma cmpXchg_0_to_10_spec (l : loc) (v : val) :
+    l ↦ v -∗
+             WP (cmpXchg_0_to_10 l) {{ _,
+                 (⌜v = #0⌝ ∗ l ↦ #10) ∨ (⌜v ≠ #0⌝ ∗ l ↦ v) }}.
+  Proof.
+    iIntros "Hl".
+    wp_cmpxchg as H1 | H2.
+    - iLeft.  by iFrame.
+    - iRight. by iFrame.
+  Qed.
+#+end_src
+
+** Recycling old proofs for profit
+- Suppose we want to prove ~WP (prog + #2) {{ v, ⌜v = #5⌝ }}~
+- We already have a spec for ~prog~, so we want to “zoom in” and apply it
+- Tool: ~wp_bind e~
+  - focuses on the next reducible sub-expression ~e~
+
+** Fixing postconditions to maximize recyclability
+- Often, the sub-spec has the “wrong” postcondition
+- Monotonicity idea:
+  - If you can show ~Φ v -∗ Ψ v~, then
+    ~WP e {{ v, Φ v }}~ implies ~WP e {{ v, Ψ v }}~
+- In practice:
+  - ~iApply wp_wand~ creates:
+    1. a goal for the original WP
+    2. a goal to transform the postcondition
+
+** Making a spec reusable from the first place
+- More ergonomic style: write specs generic over ~Φ~
+- Example shape:
+  #+begin_src coq
+    Lemma prog_spec_2 (Φ : val -> iProp Σ) :
+      (∀ v, ⌜v = #3⌝ -∗ Φ v) -∗ WP prog {{ v, Φ v }}.
+    Proof.
+      iIntros "HΦ".
+      rewrite /prog.
+      wp_alloc l as "Hl".
+      wp_load. wp_store. wp_load.
+      by iApply "HΦ".
+    Qed.
+  #+end_src
+- Now clients can use it directly with ~wp_apply~
+
+** Hoare triples
+- Another common syntax for specs: Hoare triples
+- Shape: ~{{{ P }}} e {{{ RET v; Q }}}~
+  - ~P~ :: precondition (what you must own before running ~e~)
+  - ~Q~ :: postcondition (what you get after ~e~ returns)
+- Iris convention:
+  - Write specs as Hoare triples (more readable)
+  - Prove them by unfolding into WP (more convenient)
+
+** Example: swapping two references
+#+begin_src coq
+  Definition swap : val :=
+    λ: "x" "y",
+      let: "v" := !"x" in
+      "x" <- !"y";;
+      "y" <- "v".
+
+  Lemma swap_spec (l1 l2 : loc) (v1 v2 : val) :
+    {{{ l1 ↦ v1 ∗ l2 ↦ v2 }}}
+      swap #l1 #l2
+      {{{ RET #(); l1 ↦ v2 ∗ l2 ↦ v1 }}}.
+  Proof.
+    iIntros "%Φ [H1 H2] HΦ".
+    rewrite /swap.
+    wp_pures.
+    wp_load. wp_load.
+    wp_store. wp_store.
+    iApply "HΦ". by iFrame.
+  Qed.
+#+end_src
+
+** Using a Hoare triple as a client
+- Triples are meant to be /reused/
+- Consider that swapping twice restores the original heap contents
+
+#+begin_src coq
+  Lemma swap_swap_spec (l1 l2 : loc) (v1 v2 : val) :
+    {{{ l1 ↦ v1 ∗ l2 ↦ v2 }}}
+      swap #l1 #l2;; swap #l1 #l2
+                       {{{ RET #(); l1 ↦ v1 ∗ l2 ↦ v2 }}}.
+  Proof.
+    iIntros "%Φ H HΦ".
+    wp_apply (swap_spec with "H").
+    iIntros "H".
+    wp_seq.
+    wp_apply (swap_spec with "H").
+    done.
+  Qed.
+#+end_src
+
+** Parallel concurrency
+- HeapLang library: ~par~ provides ~e1 ||| e2~
+- Each thread needs its own resources:
+  1. /Split ownership/ before forking
+  2. /Get it back/ after joining
+
+** Example: parallel client
+#+begin_src coq
+  Example par_client : expr :=
+    let: "l1" := ref #0 in
+    let: "l2" := ref #0 in
+    (("l1" <- #21) ||| ("l2" <- #2)) ;;
+    let: "life" := !"l1" * !"l2" in
+    ("l1", "l2", "life").
+#+end_src
+
+- Note: each thread touches a different location (~l1~ vs ~l2~)
+
+** Proving concurrency specs with ~wp_par~
+- The ~par~ library gives a spec ~wp_par~
+- It asks for:
+  - a postcondition ~Ψ1~ for thread 1
+  - a postcondition ~Ψ2~ for thread 2
+  - and a way to combine them back into the main postcondition
+
+** Proof shape for ~par_client~
+- The proof follows the same story as the program:
+  1. allocate ~l1~ and ~l2~ (get ~l1 ↦ #0~, ~l2 ↦ #0~)
+  2. apply ~wp_par~ and give each thread its points-to
+  3. each thread proves ~wp_store~
+  4. main thread gets back ~l1 ↦ #21 ∗ l2 ↦ #2~
+  5. load, compute, and finish (~life = 42~)
+
+- You may also see:
+  - ~iNext~ to discharge a ~▷~ (“later”) that ~wp_par~ introduces
+
+** What if they try to race?
+- Consider two threads writing the /same/ location:
+  #+begin_src coq
+    Example race (l : loc) : expr :=
+      (#l <- #1) ||| (#l <- #2).
+  #+end_src
+
+- We can /state/ a spec like this:
+  - postcondition: ~(l ↦ #1) ∨ (l ↦ #2)~
+- Can this be proven like ~par_client~?
+  - Points-to is exclusive, so both threads cannot be given ~l ↦ v~
+  - Maybe we need new tools?

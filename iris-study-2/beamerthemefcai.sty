@@ -1,0 +1,214 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Beamer theme for Yonsei University Formal Computing and AI Lab.
+%%
+%% Authors:
+%% - Kijeong Lim <kijeonglim@yonsei.ac.kr>
+%% - Juhun Lee <rangho@yonsei.ac.kr>
+%%
+%% Versions:
+%% - 2025-12-03 v0.1.0: Initial (original) version.
+%% - HEAD
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\mode<presentation>
+
+%%────────────────────────────────────────────────
+%% Beamer Theme & Navigation Overrides
+% \PassOptionsToClass{aspectratio=169}{beamer}
+usetheme{CambridgeUS}
+\useoutertheme{infolines}        % Show section & subsection bars
+\beamertemplatenavigationsymbolsempty
+\setbeamertemplate{caption}[numbered]
+\setbeamertemplate{sections/subsections in toc}[square]
+
+%%────────────────────────────────────────────────
+%% Basic Packages and Fonts
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{url}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\usepackage{multicol}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{textcomp}
+\usepackage{hanging}
+\usepackage{fontspec}
+\setmainfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+
+%%────────────────────────────────────────────────
+%% Miscellaneous Packages
+\usepackage{xparse}
+\usepackage{tcolorbox}
+\usepackage{pgfpages}
+\usepackage{arydshln}
+\usepackage[style=numeric]{biblatex}
+
+%%────────────────────────────────────────────────
+%% Theme palettes & frametitle
+\setbeamercolor{structure}{fg=yonseiblue}
+\setbeamercolor{palette primary}{bg=yonseiblue,fg=white}
+\setbeamercolor{palette secondary}{bg=yonseiblue,fg=white}
+\setbeamercolor{palette tertiary}{bg=yonseiblue,fg=white}
+\setbeamercolor{frametitle}{bg=yonseisilv,fg=white}
+\setbeamercolor{progress bar in head/foot}{fg=yonseiblue,bg=yonseisilv}
+\setbeamercolor{title}{fg=yonseiblue}
+\setbeamercolor{subtitle}{fg=yonseiblue}
+
+%%────────────────────────────────────────────────
+%% Yonsei University Official Colors
+\usepackage{xcolor}
+\definecolor{yonseiblue}{HTML}{003876}   % Primary Blue
+\definecolor{yonseisilv}{HTML}{939598}   % Secondary Silver
+\definecolor{yonseigold}{HTML}{B38C45}   % Accent Gold
+\definecolor{yonseilight}{HTML}{4169E1}
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{myred}{rgb}{0.545,0,0}
+\definecolor{myblue}{rgb}{0,0,0.545}
+\definecolor{mygray}{rgb}{0.4,0.4,0.4}
+\definecolor{mydarkblue}{rgb}{0.0,0.0,0.6}
+
+%%────────────────────────────────────────────────
+%% Lists & Enumerations (enumitem overrides)
+\usepackage{enumitem}
+\setlist[enumerate,1]{label=\arabic*.,ref=\arabic*}
+\setlist[enumerate,2]{label=(\roman*),ref=\roman*}
+\setlist[enumerate,3]{label=\alph*),ref=\alph*}
+\setlist[itemize,1]{label=\textbullet}
+\setlist[itemize,2]{label=\textbullet}
+\setlist[itemize,3]{label=\textbullet}
+\setbeamertemplate{itemize item}[circle]
+\setbeamertemplate{itemize subitem}[circle]
+\setbeamertemplate{itemize subsubitem}[circle]
+
+%%────────────────────────────────────────────────
+%% Math Packages
+\usepackage{amsmath,amsthm,amssymb,amsfonts}
+\usepackage{mathtools,nccmath}
+\usepackage{stmaryrd}
+\usepackage{proof}
+\usepackage{mathpartir}
+\usepackage{mismath}
+\DeclarePairedDelimiterX\set[1]{\lbrace}{\rbrace}{\def\mid{\;\delimsize\vert\;}#1} % usage: \set*{ n \in \mathbb{N} \mid x < 3 }
+
+%%────────────────────────────────────────────────
+%% Algorithms
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+
+%%────────────────────────────────────────────────
+%% TikZ
+\usepackage{tikz}
+\usetikzlibrary{cd}
+\usepackage{tikz-cd}
+
+%%────────────────────────────────────────────────
+%% Footnote
+\setbeamertemplate{footnote}{
+  \hspace{2.5em}\makebox[1em][l]{\insertfootnotemark}{\scriptsize\insertfootnotetext}\par
+}
+
+%%────────────────────────────────────────────────
+%% Hyperref & cleveref setup
+\makeatletter
+\Hy@implicittrue
+\makeatother
+\usepackage{hyperref}
+\usepackage[capitalize,nameinlink]{cleveref}
+
+\crefdefaultlabelformat{#2\textbf{#1}#3}
+\crefname{table}{\textbf{Table}}{\textbf{Tables}}
+\Crefname{table}{\textbf{Table}}{\textbf{Tables}}
+\crefname{section}{\textbf{Section}}{\textbf{Sections}}
+\Crefname{section}{\textbf{Section}}{\textbf{Sections}}
+\crefname{theorem}{\textbf{Theorem}}{\textbf{Theorems}}
+\Crefname{theorem}{\textbf{Theorem}}{\textbf{Theorems}}
+\crefname{definition}{\textbf{Definition}}{\textbf{Definitions}}
+\Crefname{definition}{\textbf{Definition}}{\textbf{Definitions}}
+\crefname{fact}{\textbf{Fact}}{\textbf{Facts}}
+\Crefname{fact}{\textbf{Fact}}{\textbf{Facts}}
+\crefname{lemma}{\textbf{Lemma}}{\textbf{Lemmas}}
+\Crefname{lemma}{\textbf{Lemma}}{\textbf{Lemmas}}
+\crefname{corollary}{\textbf{Corollary}}{\textbf{Corollaries}}
+\Crefname{corollary}{\textbf{Corollary}}{\textbf{Corollaries}}
+\crefname{axiom}{\textbf{Axiom}}{\textbf{Axioms}}
+\Crefname{axiom}{\textbf{Axiom}}{\textbf{Axioms}}
+\crefname{notation}{\textbf{Notation}}{\textbf{Notations}}
+\Crefname{notation}{\textbf{Notation}}{\textbf{Notations}}
+\crefname{remark}{\textbf{Remark}}{\textbf{Remarks}}
+\Crefname{remark}{\textbf{Remark}}{\textbf{Remarks}}
+
+%%────────────────────────────────────────────────
+%% Bibliography
+\usepackage[style=numeric]{biblatex}
+
+%%────────────────────────────────────────────────
+%% Custom Column Type
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+\renewcommand{\arraystretch}{1.3}
+
+%%────────────────────────────────────────────────
+%% Symbol Font Fix
+\SetSymbolFont{stmry}{bold}{U}{stmry}{m}{n}
+
+% Navigation bar colors
+\setbeamercolor{section in head/foot}{bg=yonseiblue, fg=white}
+\setbeamerfont{section in head/foot}{size=\scriptsize}
+\setbeamercolor{subsection in head/foot}{bg=white, fg=yonseiblue}
+\setbeamerfont{subsection in head/foot}{size=\scriptsize}
+
+%%────────────────────────────────────────────────
+%% Custom Frame Title
+\setbeamertemplate{frametitle}{
+  \vspace{-0.7ex}
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.3ex,dp=1ex,leftskip=0.5em,rightskip=0.5em]{frametitle}
+    \usebeamerfont{frametitle}\insertframetitle
+  \end{beamercolorbox}
+}
+
+%%────────────────────────────────────────────────
+%% Make below blank
+\usepackage{etoolbox}
+\makeatletter
+\pretocmd{\beamer@@frametitle}{\vspace{-0.7em}}{}{}
+\makeatother
+
+%%────────────────────────────────────────────────
+%% Custom Footline (two logos at bottom corners)
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=4ex,dp=1.5ex,leftskip=1em,rightskip=1em]{author in head/foot}%
+    \includegraphics[height=0.8cm]{assets/logo-yonsei.png}%
+    \hfill
+    \includegraphics[height=0.8cm]{assets/logo-fcai.png}%
+    \newline
+    \footnotesize
+    \usebeamerfont{author in head/foot}\insertshortauthor%
+    \hfill
+    \usebeamerfont{page number in head/foot}\textbf{\insertframenumber{}} \textbf{/} \textbf{\inserttotalframenumber}
+  \end{beamercolorbox}%
+}
+
+%%────────────────────────────────────────────────
+%% Custom Commands & Environments
+\renewcommand*{\bibfont}{\small}
+\newcommand{\makereferences}{
+  \nocite{*}
+  \begingroup
+  \setlength\bibitemsep{0pt}
+  \printbibliography
+  \endgroup
+}
+
+\newcommand{\inlinedef}[1]{\emph{\textbf{#1}}}
+\newcommand{\powerset}{\mathcal{P}}
+\newcommand{\concat}{\ensuremath{+\!\!\!\!+\,}}
+\newcommand{\listunit}[1]{[#1]}
+\newcommand{\bind}{\ensuremath{>\!\!>\!=}}
+
+\newenvironment{mkparagraph}[1][]
+{ \noindent \textbf{{#1}.} }
+{ \hfill $ \dashv $ }
+
+\mode<all>
