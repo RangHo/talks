@@ -1,0 +1,366 @@
+#+title: DimSum: A Decentralized Approach to Multi-language Semantics and Verification
+#+subtitle: https://doi.org/10.1145/3571220
+#+author: Juhun Lee
+#+date: <2026-02-19 Thu>
+#+options: h:2 toc:nil num:t
+#+latex_class: beamer
+#+latex_class_options: [presentation,table,10pt,aspectratio=169]
+#+latex_header: \usepackage{stmaryrd}
+#+latex_header: \usepackage{tikz}
+#+latex_header: \usetikzlibrary{graphs, graphs.standard}
+#+latex_header_extra: \institute{FCAI Lab \\Yonsei University}
+#+columns: %45item %10beamer_env(env) %10beamer_act(act) %4beamer_col(col)
+#+beamer_theme: fcai
+
+* Introduction
+
+** The real world is /down there/
+- Real-world software is created with different programming languages:
+  - Emacs (C, Emacs Lisp) :: Emacs Lisp interpreter and compiler is written in C
+  - NumPy (Python, C) :: Numeric algorithms are written in C and interfaced to Python for efficiency
+- This causes *boundary friction*
+  - Calling conventions?
+  - Memory models?
+  - Value representation?
+
+** Attempts to verify multi-language programs
+- Previous attempts require *global upfront commitments*
+- Requires manual search for constraints
+- Not portable---same constraints cannot be applied to other programs
+
+#+begin_center
+Software verification must be /decentrailized/.
+#+end_center
+
+** What does it mean to be /decentralized/?
+1. No fixed source language
+   - Allow linking with low-level libraries that have /no/ equivalent in a source language
+   - "Source-independent linking"
+2. No fixed set of languages
+   - Don't try to bake all sets of interoperable languages into one semantics
+   - "Language-local reasoning"
+3. No fixed memory model
+   - Allow libraries to use different language models
+   - e.g. CompCert-like block addressing
+   - e.g. Flat addressing
+4. No fixed notion of linking
+   - Let users to define custom semantic operators, instead of an official operator
+
+** Solution: DimSum
+#+begin_center
+*DimSum*: a Coq framework where each language is modeled as a module that communicates via events.
+#+end_center
+
+* Case Study
+
+** Language definition
+There are 2 different "simple" languages: ~Rec~ and ~Asm~
+
+- ~Rec~ is a simple programming language that allows recursive calls
+  - Here, written in Elixir-like syntax
+- ~Asm~ is a simplified low-level "assembly language"
+  - Here, written in Ruby-like syntax
+
+** Main function, in ~Rec~
+#+begin_src elixir
+  def main do
+    x = Array.new(3, 0); x[0] = 1; x[1] = 2
+    # => x = [1, 2, 0].
+    memmove(x + 1, x + 0, 2)
+    # => x = [1, 1, 2].
+    print(x[1]); print(x[2])
+    # prints 1, then prints 2.
+  end
+#+end_src
+
+** ~Rec~ library functions
+#+begin_src elixir
+  def memcpy(d, s, n, o) when n > 0 do
+    d = s.value
+    memcpy(d + o, s + o, n - 1, o)
+  end
+
+  def memcpy(_d, _s, 0, _o), do: :ok
+
+  def memmove(d, s, n) when locle(d, s) do
+    memcpy(d, s, n, 1)
+  end
+
+  def memmove(d, s, n) do
+    memcpy(d + n - 1, s + n - 1, n, -1)
+  end
+#+end_src
+
+** ~Asm~ library functions
+#+begin_src ruby
+  def locle
+    sle x0, x0, x1
+    ret
+  end
+
+  def print
+    mov x9, PRINT
+    syscall
+    ret
+  end
+#+end_src
+
+** Verifying the main function
+- The ~main~ function cannot be expressed in ~Rec~ only, because:
+  1. ~print~ subroutine invokes a syscall
+     - ~Rec~ cannot represent control delegation to kernel
+  2. ~locle~ function performs pointer comparison
+     - ~Rec~ employs block-with-offset style memory model
+     - In ~Asm~, pointer types are regular integers
+- In order to check if the program conforms to the spec, everything must be compiled down to ~Asm~
+
+\begin{equation*}
+{\color{red}\text{onetwo}} ~ \triangleq ~ \downarrow {\color{blue}\text{main}} ~ \cup_{a} ~ \downarrow {\color{blue}\text{memmove}} ~ \cup_{a} ~ {\color{red}\text{locle}} ~ \cup_{a} ~ {\color{red}\text{print}}
+\end{equation*}
+
+* Technical Idea #1
+
+** Modules? Labeled transition systems!
+- A library's semantics is a /module/
+- A module's semantics is a /labeled transition system (LTS)/
+- Transitions to and from LTSs emit /events/
+
+** What kind of events?
+- There are two types of events: incoming(~?~) and outgoing(~!~)
+- ~Rec~ events
+  - \( \text{Call}(f, \vec{v}, m) \) :: Function call event, with function \( f \), argument vector \( \vec{v} \), and the entire memory \( m \)
+  - \( \text{Return}(\vec{v}, m) \) :: Function return event, with value vector \( \vec{v} \) and the entire memory \( m \)
+- ~Asm~ events
+  - \( \text{Jump}(r, m) \) :: Jumping to the program counter specified in register set \( r \) and the memory \( m \)
+  - \( \text{Syscall!}(v_{1}, v_{2}, m) \) :: Make a system call identified by \( v_{1} \) with argument \( v_{2} \) with memory \( m \)
+  - \( \text{SyscallRet?}(v, m) \) :: Expect a return value \( v \) with memory \( m \)
+
+** What events carry
+- Events carry /states/ associated with the event
+  - i.e., events are /stateful/
+- Stateful design ensures synchronization on events
+  - Stateful languages can emit stateful events
+
+* Technical Idea #2
+
+** Decentralizing the proof
+\begin{align*}
+\llbracket \text{onetwo} \rrbracket_{a} & = \llbracket \downarrow \text{main} ~ \cup_{a} ~ \downarrow \text{memmove} ~ \cup_{a} ~ \text{locle} ~ \cup_{a} ~ \text{print} \rrbracket_{a} \\
+& \preceq \llbracket \downarrow \text{main} \rrbracket_{a} \oplus_{a} \llbracket \downarrow \text{memmove} \rrbracket_{a} \oplus_{a} \llbracket \text{locle} \rrbracket_{a} \oplus_{a} \llbracket \text{print} \rrbracket_{a} \\
+& \preceq \lceil \llbracket \text{main} \rrbracket_{r} \rceil_{r \rightleftharpoons a} \oplus_{a} \lceil \llbracket \text{memmove} \rrbracket_{r} \rceil_{r \rightleftharpoons a} \oplus_{a} \llbracket \text{locle} \rrbracket_{a} \oplus_{a} \llbracket \text{print} \rrbracket_{a} \\
+& \preceq \lceil \llbracket \text{main} \rrbracket_{r} \rceil_{r \rightleftharpoons a} \oplus_{a} \lceil \llbracket \text{memmove} \rrbracket_{r} \rceil_{r \rightleftharpoons a} \oplus_{a} \lceil \llbracket \text{locle}_{spec} \rrbracket_{s} \rceil_{r \rightleftharpoons a} \oplus_{a} \llbracket \text{print}_{spec} \rrbracket_{s} \\
+& \preceq \lceil \llbracket \text{main} \rrbracket_{r} \oplus_{r} \llbracket \text{memmove} \rrbracket_{r} \oplus_{r} \llbracket \text{locle}_{spec} \rrbracket_{s} \rceil_{r \rightleftharpoons a} \oplus_{a} \llbracket \text{print}_{spec} \rrbracket_{s} \\
+& \preceq \lceil \llbracket \text{main} \cup_{r} \text{memmove} \rrbracket_{r} \oplus_{r} \llbracket \text{locle}_{spec} \rrbracket_{s} \rceil_{r \rightleftharpoons a} \oplus_{a} \llbracket \text{print}_{spec} \rrbracket_{s} \\
+& \preceq \lceil \llbracket \text{main}_{spec} \rrbracket_{s} \rceil_{r \rightleftharpoons a} \oplus_{a} \llbracket \text{print}_{spec} \rrbracket_{s} \\
+& \preceq \llbracket \text{onetwo}_{spec} \rrbracket_{s}
+\end{align*}
+
+** Compiled and linked program
+\begin{equation*}
+\llbracket \text{onetwo} \rrbracket_{a} = \llbracket \downarrow \text{main} ~ \cup_{a} ~ \downarrow \text{memmove} ~ \cup_{a} ~ \text{locle} ~ \cup_{a} ~ \text{print} \rrbracket_{a}
+\end{equation*}
+
+#+begin_center
+Start with the original program.
+#+end_center
+
+** Syntactic to semantic
+\begin{equation*}
+\llbracket \text{onetwo} \rrbracket_{a} \preceq \llbracket \downarrow \text{main} \rrbracket_{a} \oplus_{a} \llbracket \downarrow \text{memmove} \rrbracket_{a} \oplus_{a} \llbracket \text{locle} \rrbracket_{a} \oplus_{a} \llbracket \text{print} \rrbracket_{a}
+\end{equation*}
+
+#+begin_center
+Replace syntactic linking operator \( \cup_{a} \) with semantic linking operator \( \oplus_{a} \).
+#+end_center
+
+** Decompile the target program
+\begin{equation*}
+\llbracket \text{onetwo} \rrbracket_{a} \preceq \lceil \llbracket \text{main} \rrbracket_{r} \rceil_{r \rightleftharpoons a} \oplus_{a} \lceil \llbracket \text{memmove} \rrbracket_{r} \rceil_{r \rightleftharpoons a} \oplus_{a} \llbracket \text{locle} \rrbracket_{a} \oplus_{a} \llbracket \text{print} \rrbracket_{a}
+\end{equation*}
+
+#+begin_center
+Replace compiled modules with /wrapped/ source modules.
+
+(Compiler correctness guarantees that this transformation holds.)
+#+end_center
+
+** Take low-level modules away
+\begin{equation*}
+\llbracket \text{onetwo} \rrbracket_{a} \preceq \lceil \llbracket \text{main} \rrbracket_{r} \rceil_{r \rightleftharpoons a} \oplus_{a} \lceil \llbracket \text{memmove} \rrbracket_{r} \rceil_{r \rightleftharpoons a} \oplus_{a} \lceil \llbracket \text{locle}_{spec} \rrbracket_{s} \rceil_{r \rightleftharpoons a} \oplus_{a} \llbracket \text{print}_{spec} \rrbracket_{s}
+\end{equation*}
+
+#+begin_center
+Replace low-level ~locle~ and ~print~ module with its abstract specification.
+
+(Note that the ~locle~ specification is defined in ~Rec~ while ~print~ specficication is defined in ~Asm~.)
+#+end_center
+
+** Try reason as much as possible
+\begin{align*}
+\llbracket \text{onetwo} \rrbracket_{a} & \preceq \lceil \llbracket \text{main} \rrbracket_{r} \oplus_{r} \llbracket \text{memmove} \rrbracket_{r} \oplus_{r} \llbracket \text{locle}_{spec} \rrbracket_{s} \rceil_{r \rightleftharpoons a} \oplus_{a} \llbracket \text{print}_{spec} \rrbracket_{s} \\
+& \preceq \lceil \llbracket \text{main} \cup_{r} \text{memmove} \rrbracket_{r} \oplus_{r} \llbracket \text{locle}_{spec} \rrbracket_{s} \rceil_{r \rightleftharpoons a} \oplus_{a} \llbracket \text{print}_{spec} \rrbracket_{s}
+\end{align*}
+
+#+begin_center
+Now that the behavior is modeled in ~Rec~, try reason in ~Rec~ as much as possible.
+#+end_center
+
+** Finish up
+\begin{align*}
+\llbracket \text{onetwo} \rrbracket_{a} & \preceq \lceil \llbracket \text{main}_{spec} \rrbracket_{s} \rceil_{r \rightleftharpoons a} \oplus_{a} \llbracket \text{print}_{spec} \rrbracket_{s} \\
+& \preceq \llbracket \text{onetwo}_{spec} \rrbracket_{s}
+\end{align*}
+
+We can represent this refinement relationship as follows:
+
+\begin{equation*}
+\text{onetwo} ~ \sideset{_{a}}{_{s}}{\preceq} ~ \text{onetwo}_{spec}
+\end{equation*}
+
+** What decentralization lets us
+- We can /temporarily/ move between levels (~Rec~ \leftrightarrow ~Asm~)
+- We can introduce /library-specific linking/ (\oplus_{r} in this example) to keep most reasoning high-level
+- We can verify ~Rec~ libraries without baking the fact that ~Asm~ libraries exist (unless at the language boundary)
+
+* Technical Idea #3
+
+** Playing in multiple fields at once
+- DimSum allows temporary translation of modules into different languages
+- This /translation/ always happens in the semantic level
+- i.e., \( \lceil \cdot \rceil \) translates events from one language to another
+
+** Example: ~Rec~ to ~Asm~
+Consider the semantic wrapper \( \lceil \cdot \rceil_{r \rightleftharpoons a} \).
+If we were to translate ~Rec~ module into ~Asm~ module, this wrapper will perform the following transforations:
+
+- Calling convention :: ~Call~ and ~Return~ pair \rightarrow ~Jump~
+- Value representation :: Structured ~Rec~ values \rightarrow Integer ~Asm~ values
+- Memory model :: Block-based \rightarrow Flat addressing
+
+** Climbing against the river
+- The transformation done by wrappers must preserve the /world state/
+  - e.g., block ID \rightarrow address map must be maintained to ensure consistent pointer resolution
+  - a.k.a. "Kripke relations"
+- Low-level to high-level transformation requires /angelic non-determinism/
+  - e.g. transforming ~Asm~ integer values into structured ~Rec~ values require assumptions
+  - The wrapper lets "angelic" choice, and the subsequent correctness obligations force consistent choices
+
+* Semantic Background
+
+** Refinement and branching-sensitive simulation
+- Module transitions go from one state to a /set of states/
+  - This models branching patterns in computer programs cleanly
+- Refinement is a /coinductive simulation/ that preserves the structure of events
+  - This may or may not terminate
+- This simulation is small enough to imply traditional whole-program trace refinement
+- Simulation is still required to ensure synchronization per step
+
+** The ~Spec~ language
+The ~Spec~ language is defined as follows:
+
+\begin{equation*}
+\text{Spec}(E) \ni p ~ ::=_{\text{coind}} ~ \text{vis}(e); p ~ | ~ \exists x : T; p(x) ~ | ~ \forall x : T; p(x) \qquad (e \in E)
+\end{equation*}
+
+The module semantic of a program \(p \in \text{Spec}(E) \) is defined as follows:
+
+\begin{equation*}
+\llbracket p \rrbracket_{s} \triangleq (\text{Spec}(E), \rightarrow_{s}, p)
+\end{equation*}
+
+The program executes according to the following transition system:
+
+\begin{equation*}
+(\text{vis}(e); p) \stackrel{e}{\rightarrow_{s}} \lbrace p \rbrace \quad
+(\exists x : T; p(x)) \stackrel{\tau}{\rightarrow_{s}} \lbrace p(y) \rbrace ~ \text{where} ~ y \in T \quad
+(\forall x : T; p(x)) \stackrel{\tau}{\rightarrow_{s}} \lbrace p(y) | y \in T \rbrace
+\end{equation*}
+
+** Angelic? Demonic?
+Consider the following refinement relationship between two modules:
+\[ M_{1} \preceq M_{2} \]
+
+- The existential quatification (\exists) indicates *demonic* choice
+  - Demonic choice in \( M_{1} \) means we need to consider all possible choices of the program
+  - Demonic choice in \( M_{2} \) means we need to choose a certain state of the program
+- The universal quantification (\forall) indicates *angelic* choice
+  - Angelic choice in \( M_{1} \) means we need to choose a certain state of the program
+  - Angelic choice in \( M_{2} \) means we need to consider all possible choices of the program
+
+* Combinators
+
+** The Lego bricks
+- DimSum provides language-agonistic building blocks
+  - Product combinator \( M_{1} \times M_{2} \)
+  - Filtering combinator \( M_{1} \backslash M_{2} \)
+  - Linking combinator \( M_{1} \oplus_{X} M_{2} \)
+  - Wrapper combinator \( \lceil M \rceil_{X} \)
+- These building blocks are /generic/
+
+** Horizontal compositionality
+#+begin_center
+All combinators are *monotonic* with respect to refinement.
+#+end_center
+
+- If parts of a thing refine, then the whole thing refines
+- This property allows the decomposition method introduced earlier.
+
+** Language-specific instantiations: ~Asm~
+- The ~Asm~ is an idealized assembly language
+- Events
+  - Jumps
+  - Syscalls with register and memory
+- Linking semantics
+  - Semantic linking synchronizes on jump event based on address ranges
+
+** Language-specific instantiations: ~Rec~
+- The ~Rec~ is a simple, high-level language with let-bindings and recursive function calls
+- Events
+  - Function call
+  - Function return
+
+** Language-specific instantiations: \oplus_{coro}
+- The \oplus_{coro} linker is an additional semantic linking operator for ~Rec~
+- Usage: \( M_{1} \oplus_{coro} M_{2} \)
+- Linking semantics
+  - Calls to ~yield~ in \( M_{1} \) are linked to returns from ~yield~ in \( M_{2} \) (or vice versa)
+
+* Compilers
+
+** ~Rec~ to ~Asm~ compiler
+- DimSum's ~Rec~ to ~Asm~ compiler has 4 passes:
+  1. SSA
+  2. Linearize
+  3. Mem2Reg
+  4. Codegen
+- Having a verified, correct compiler is crucial to the integrity of DimSum verification
+
+** Why do we need a correct compiler?
+- Decompositionability depends on this property
+  - If \( \downarrow R \) is defined, then \( \llbracket \downarrow R \rrbracket_{a} \preceq \lceil \llbracket R \rrbracket_{r} \rceil_{r \rightleftharpoons a} \).
+- If the property above does not hold, we cannot decompose compiled modules
+- Back to the traditional method of giving global program semantics
+
+** When events change
+- Some optimizations (e.g., Mem2Reg) must change the visible event
+- Thus, we cannot prove \( \llbracket R_{opt} \rrbracket_{r} \preceq \llbracket R_{lin} \rrbracket_{r} \)
+  - Visible events don't match, cannot prove refinement
+- Internal transformer \( \lceil \cdot \rceil_{r \rightleftharpoons r} \) that matches events of \( \llbracket R_{lin} \rrbracket_{r} \)
+  - Now \( \llbracket R_{opt} \rrbracket_{r} \preceq \lceil \llbracket R_{lin} \rrbracket_{r} \rceil_{r \rightleftharpoons r} \) is provable
+
+* Takeaways
+
+** Advantages
+- A decentralized method \rightarrow define/verify languages independently
+  - Only connect them via explicit event protocols and wrappers
+- A practical Coq framework with a reusable combinator library + mechanized case studies
+- Demonstrates:
+    - Multi-language linking across different memory models
+    - Library abstractions not expressible in the source language (pointer-compare, coroutine linking)
+    - compatibility with a verified optimizing compiler 
+
+** Limitations
+- Most testing was done in a sequential setting
+  - Still no mechanized verification available for concurrent applications
+- Can this also model use cases where two different modules interact simultaneously?
+
